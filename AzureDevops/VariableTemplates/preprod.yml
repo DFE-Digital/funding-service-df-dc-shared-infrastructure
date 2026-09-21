@@ -1,0 +1,12 @@
+variables:
+  ResourcePrefix: s255t02
+  AzureSubscription: 'c4542a65-affe-40bb-a9c0-33fc31feb3c9'
+  DeploymentServicePrincipal: 'e35197b9-684d-4b77-9b90-2d792b6d5e42'
+
+  # API App Service Plan Settings
+  ApiAppServicePlanSize:  2
+  ApiAppServicePlanInstances: 1
+  ApiAppServicePlanTier: PremiumV3
+
+  # Tags
+  EnvironmentTag: Pre-Prod

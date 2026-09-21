@@ -1,0 +1,50 @@
+﻿{
+    "$schema": "https://schema.management.azure.com/schemas/2018-05-01/subscriptionDeploymentTemplate.json",
+    "contentVersion": "1.0.0.0",
+        "parameters": {
+            "environmentTag": {
+                "type": "string"
+            },
+            "portfolioTag": {
+                "type": "string"
+            },
+            "serviceLineTag": {
+                "type": "string"
+            },
+            "serviceTag": {
+                "type": "string"
+            },
+            "productTag": {
+                "type": "string"
+            },
+            "serviceOfferingTag": {
+                "type": "string"
+            },
+            "parentBusinessTag": {
+                "type": "string"
+            },
+            "SharedResourceGroupName": {
+                "type": "string"
+            }
+        },
+        "variables": {
+            "resourceGroupTags": {
+                "Environment": "[parameters('environmentTag')]",
+                "Parent Business": "[parameters('parentBusinessTag')]",
+                "Portfolio": "[parameters('portfolioTag')]",
+                "Product": "[parameters('productTag')]",
+                "Service": "[parameters('serviceTag')]",
+                "Service Line": "[parameters('serviceLineTag')]",
+                "Service Offering": "[parameters('serviceOfferingTag')]"
+            }
+        },
+        "resources": [
+        {
+            "apiVersion": "2020-06-01",
+            "name": "[parameters('SharedResourceGroupName')]",
+            "type": "Microsoft.Resources/resourceGroups",
+            "location": "UK South",
+            "tags": "[variables('resourceGroupTags')]"
+        }
+    ]
+}

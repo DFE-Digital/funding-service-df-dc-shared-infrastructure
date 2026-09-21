@@ -1,0 +1,53 @@
+pool:
+  vmImage: windows-latest
+
+trigger: none
+
+schedules:
+- cron: "0 3 * * 6"
+  displayName: Weekly storage key rotation
+  always: true
+  branches:
+    include:
+    - release/atc_v1
+
+stages:
+- stage: RotateDevStorageKeys
+  jobs:
+  - template: JobTemplates\rotate-storage-keys.yml
+    parameters:
+      Environment: Dev
+      AzureServiceConnection: 's255d.azdo.deployment'
+      StorageAccountName: s255d01strdfdcshared
+      StorageAccountResourceGroup: s255d01rg-uks-df-dc-shared
+      KeyVaultName: s255d01kv-df-dc-shared
+
+- stage: RotateTestStorageKeys
+  jobs:
+  - template: JobTemplates\rotate-storage-keys.yml
+    parameters:
+      Environment: Test
+      AzureServiceConnection: 's255t.azdo.deployment'
+      StorageAccountName: s255t01strdfdcshared
+      StorageAccountResourceGroup: s255t01rg-uks-df-dc-shared
+      KeyVaultName: s255t01kv-df-dc-shared
+
+- stage: RotatePreProdStorageKeys
+  jobs:
+  - template: JobTemplates\rotate-storage-keys.yml
+    parameters:
+      Environment: PreProduction
+      AzureServiceConnection: 's255t.azdo.deployment'
+      StorageAccountName: s255t02strdfdcshared
+      StorageAccountResourceGroup: s255t02rg-uks-df-dc-shared
+      KeyVaultName: s255t02kv-df-dc-shared
+
+- stage: RotateProductionStorageKeys
+  jobs:
+  - template: JobTemplates\rotate-storage-keys.yml
+    parameters:
+      Environment: Production
+      AzureServiceConnection: 's255p.azdo.deployment'
+      StorageAccountName: s255p01strdfdcshared
+      StorageAccountResourceGroup: s255p01rg-uks-df-dc-shared
+      KeyVaultName: s255p01kv-df-dc-shared

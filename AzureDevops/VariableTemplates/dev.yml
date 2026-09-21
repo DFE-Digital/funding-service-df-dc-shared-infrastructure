@@ -1,0 +1,19 @@
+﻿variables:
+  ResourcePrefix: s255d01
+  AzureSubscription: '51199e9b-8fa9-4269-825e-fa5d7cc2b857'
+  DeploymentServicePrincipal: '4e8b466b-fc87-4c57-8ce1-c393a726f348'
+
+  # API App Service Plan Settings
+  ApiAppServicePlanSize:  0
+  ApiAppServicePlanInstances: 1
+  ApiAppServicePlanTier: PremiumV3
+
+  # Tags
+  EnvironmentTag: Dev
+  ServiceTag: 'Funding and Allocations'
+  ServiceLineTag: 'Funding'
+  ParentBusinessTag: 'Funding and Allocations'
+  PortfolioTag: 'Education And Skills Funding Agency'
+  ProductTag: 'Funding Service Digital Forms'
+  ServiceOfferingTag: 'Digital Forms'
+

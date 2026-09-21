@@ -1,0 +1,180 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "DocCapture.API",
+    "version": "1.0"
+  },
+  "host": "<<APPSERVICE>>",
+  "basePath": "/",
+  "schemes": [
+    "https"
+  ],
+  "paths": {
+    "/api/FileDownload/downloadFile": {
+      "post": {
+        "tags": [
+          "FileDownload"
+        ],
+        "consumes": [
+          "multipart/form-data"
+        ],
+        "produces": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "parameters": [
+          {
+            "in": "formData",
+            "name": "FilePath",
+            "type": "string"
+          },
+          {
+            "in": "formData",
+            "name": "SourceSystem",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/File"
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "schema": {
+              "type": "string"
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "schema": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "/api/FileUpload/UploadFile": {
+      "post": {
+        "tags": [
+          "FileUpload"
+        ],
+        "consumes": [
+          "multipart/form-data"
+        ],
+        "produces": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "parameters": [
+          {
+            "in": "formData",
+            "name": "FileName",
+            "type": "string"
+          },
+          {
+            "in": "formData",
+            "name": "SourceApplication",
+            "type": "string"
+          },
+          {
+            "in": "formData",
+            "name": "FileType",
+            "type": "string"
+          },
+          {
+            "in": "formData",
+            "name": "IsAllowed",
+            "type": "boolean"
+          },
+          {
+            "in": "formData",
+            "name": "File",
+            "type": "file"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/DocUploadResponse"
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "schema": {
+              "type": "string"
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "schema": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "/api/FileUpload/{fileId}/GetFileStatus": {
+      "get": {
+        "tags": [
+          "FileUpload"
+        ],
+        "produces": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "fileId",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "type": "string"
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "schema": {
+              "type": "string"
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "schema": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "DocUploadResponse": {
+      "type": "object",
+      "properties": {
+        "fileId": {
+          "format": "uuid",
+          "type": "string"
+        },
+        "fileName": {
+          "type": "string"
+        }
+      }
+    },
+    "File": {
+      "type": "object"
+    }
+  }
+}

@@ -1,0 +1,1104 @@
+﻿{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "environmentTag": {
+            "type": "string"
+        },
+        "parentBusinessTag": {
+            "type": "string"
+        },
+        "portfolioTag": {
+            "type": "string"
+        },
+        "productTag": {
+            "type": "string"
+        },
+        "serviceTag": {
+            "type": "string"
+        },
+        "serviceLineTag": {
+            "type": "string"
+        },
+        "serviceOfferingTag": {
+            "type": "string"
+        },
+        "sharedStorageName": {
+            "type": "string",
+            "metadata": {
+                "description": "Resource name of the shared storage account"
+            }
+        },
+        "sharedServiceBusName": {
+            "type": "string",
+            "metadata": {
+                "description": "Resource name of the shared service bus"
+            }
+        },
+        "linuxAppServicePlanName": {
+            "type": "string",
+            "metadata": {
+                "description": "Resource name for the linux app service plan"
+            }
+        },
+        "apiAppServicePlanSize": {
+            "type": "string",
+            "defaultValue": "1",
+            "metadata": {
+                "description": "Size of the shared app service plan"
+            }
+        },
+        "apiAppServicePlanInstances": {
+            "type": "int",
+            "defaultValue": 1,
+            "metadata": {
+                "description": "Number of instances of the shared app service plan to run"
+            }
+        },
+        "apiAppServicePlanTier": {
+            "type": "string",
+            "defaultValue": "Standard",
+            "metadata": {
+                "description": "The tier of the shared app service plan to run"
+            }
+        },
+        "sharedCosmosAccount": {
+            "type": "string",
+            "metadata": {
+                "description": "Resource name for the cosmos database account"
+            }
+        },
+        "sharedKeyVaultName": {
+            "type": "string",
+            "metadata": {
+                "description": "Resource name for the key vault"
+            }
+        },
+        "accessPolicies": {
+            "type": "object",
+            "defaultValue": {
+                "list": []
+            },
+            "metadata": {
+                "description": "An object containing a list of objects with the following schema: https://docs.microsoft.com/en-us/azure/templates/microsoft.keyvault/2018-02-14/vaults#AccessPolicyEntry"
+            }
+        },
+        "deploymentServicePrincipalId": {
+            "type": "string",
+            "metadata": {
+                "description": "The GUID of the azure ad user used for the service connection"
+            }
+        },
+        "sharedVirtualNetworkName": {
+            "type": "string",
+            "metadata": {
+                "description": "Name for the deployed virtual network"
+            }
+        },
+        "sharedSubnetName": {
+            "type": "string",
+            "metadata": {
+                "description": "The name of the shared subnet"
+            }
+        },
+        "sharedRouteTableName": {
+            "type": "string",
+            "defaultValue": "",
+            "metadata": {
+                "description": "Name for the subnet on the shared virtual network"
+            }
+        },
+        "sharedNetworkSecurityGroupName": {
+            "type": "string",
+            "defaultValue": "",
+            "metadata": {
+                "description": "Name for the nsg for subnets on the shared virtual network"
+            }
+        },
+        "sharedAppInsightsName": {
+            "type": "string",
+            "metadata": {
+                "description": "Name for the shared app insights instance"
+            }
+        },
+        "sharedLogAnalyticsName": {
+            "type": "string",
+            "metadata": {
+                "description": "The name of the shared log analytics account"
+            }
+        },
+        "linuxFileDetailsFunctionAppName": {
+            "type": "string",
+            "metadata": {
+                "description": "The linux name of the shared log analytics account"
+            }
+        },
+        "digitalFormsSharepointTenantId": {
+            "type": "securestring",
+            "metadata": {
+                "description": "The tenant id used for accessing the Digital Forms sharepoint instance"
+            }
+        },
+        "digitalFormsSharepointClientId": {
+            "type": "securestring",
+            "metadata": {
+                "description": "The client id used for accessing the Digital Forms sharepoint instance"
+            }
+        },
+        "digitalFormsSharepointClientSecret": {
+            "type": "securestring",
+            "metadata": {
+                "description": "The client secret used for accessing the Digital Forms sharepoint instance"
+            }
+        },
+        "dcDataCollectionThroughput": {
+            "type": "int",
+            "defaultValue": 400,
+            "metadata": {
+                "description": "Throughput for the dc-data collection"
+            }
+        }
+    },
+    "variables": {
+        "fundingBuildingBlocksUrl": "https://raw.githubusercontent.com/SkillsFundingAgency/funding-platform-building-blocks/main/templates/"
+    },
+    "resources": [
+         {
+            "type": "Microsoft.Network/networkSecurityGroups",
+            "apiVersion": "2024-05-01",
+            "name": "[parameters('sharedNetworkSecurityGroupName')]",
+            "location": "[resourceGroup().location]",
+            "tags": {
+                "Environment": "[parameters('environmentTag')]",
+                "Parent Business": "[parameters('parentBusinessTag')]",
+                "Portfolio": "[parameters('portfolioTag')]",
+                "Product": "[parameters('productTag')]",
+                "Service": "[parameters('serviceTag')]",
+                "Service Line": "[parameters('serviceLineTag')]",
+                "Service Offering": "[parameters('serviceOfferingTag')]"
+            },
+            "properties": {
+                "securityRules": []
+            }
+        },
+        {
+            "type": "Microsoft.Network/routeTables",
+            "apiVersion": "2020-11-01",
+            "name": "[parameters('sharedRouteTableName')]",
+            "location": "[resourceGroup().location]",
+            "tags": {
+                "Environment": "[parameters('environmentTag')]",
+                "Parent Business": "[parameters('parentBusinessTag')]",
+                "Portfolio": "[parameters('portfolioTag')]",
+                "Product": "[parameters('productTag')]",
+                "Service": "[parameters('serviceTag')]",
+                "Service Line": "[parameters('serviceLineTag')]",
+                "Service Offering": "[parameters('serviceOfferingTag')]"
+            },
+            "properties": {
+                "disableBgpRoutePropagation": false,
+                "routes": [
+                ]
+            }
+        },
+        {
+            "type": "Microsoft.Resources/deployments",
+            "apiVersion": "2018-05-01",
+            "name": "sharedVirtualNetwork",
+            "dependsOn": [
+                "[parameters('sharedNetworkSecurityGroupName')]",
+                "[parameters('sharedRouteTableName')]"
+            ],
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "[concat(variables('fundingBuildingBlocksUrl'),'virtual-network.json')]",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parameters": {
+                    "environmentTag": {
+                        "value": "[parameters('environmentTag')]"
+                    },
+                    "parentBusinessTag": {
+                        "value": "[parameters('parentBusinessTag')]"
+                    },
+                    "portfolioTag": {
+                        "value": "[parameters('portfolioTag')]"
+                    },
+                    "productTag": {
+                        "value": "[parameters('productTag')]"
+                    },
+                    "serviceTag": {
+                        "value": "[parameters('serviceTag')]"
+                    },
+                    "serviceLineTag": {
+                        "value": "[parameters('serviceLineTag')]"
+                    },
+                    "serviceOfferingTag": {
+                        "value": "[parameters('serviceOfferingTag')]"
+                    },
+                    "armVnetName": {
+                        "value": "[parameters('sharedVirtualNetworkName')]"
+                    },
+                    "armVnetAddressSpaceCIDR": {
+                        "value": "192.168.0.0/16"
+                    },
+                    "subnetConfiguration": {
+                        "value": [
+                            {
+                                "name": "[parameters('sharedSubnetName')]",
+                                "properties": {
+                                    "addressPrefix": "192.168.0.0/24",
+                                    "serviceEndpoints": [
+                                        {
+                                            "service": "Microsoft.AzureCosmosDB",
+                                            "locations": [
+                                                "uksouth"
+                                            ]
+                                        },
+                                        {
+                                            "service": "Microsoft.KeyVault",
+                                            "locations": [
+                                                "uksouth"
+                                            ]
+                                        },
+                                        {
+                                            "service": "Microsoft.Storage",
+                                            "locations": [
+                                                "uksouth"
+                                            ]
+                                        },
+                                        {
+                                            "service": "Microsoft.Sql",
+                                            "locations": [
+                                                "uksouth"
+                                            ]
+                                        },
+                                        {
+                                            "service": "Microsoft.ServiceBus",
+                                            "locations": [
+                                                "uksouth"
+                                            ]
+                                        },
+                                        {
+                                            "service": "Microsoft.Web",
+                                            "locations": [
+                                                "uksouth"
+                                            ]
+                                        }
+                                    ],
+                                    "delegations": [
+                                        {
+                                            "name": "delegation",
+                                            "properties": {
+                                                "serviceName": "Microsoft.Web/serverfarms"
+                                            }
+                                        }
+                                    ],
+                                    "routeTable": {
+                                        "id": "[resourceId('Microsoft.Network/routeTables', parameters('sharedRouteTableName'))]"
+                                    },
+                                    "networkSecurityGroup": {
+                                        "id": "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('sharedNetworkSecurityGroupName'))]"
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Resources/deployments",
+            "apiVersion": "2018-05-01",
+            "dependsOn": [
+                "sharedVirtualNetwork"
+            ],
+            "name": "sharedStorageAccount",
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "[concat(variables('fundingBuildingBlocksUrl'),'storage-account-arm.json')]",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parameters": {
+                    "environmentTag": {
+                        "value": "[parameters('environmentTag')]"
+                    },
+                    "parentBusinessTag": {
+                        "value": "[parameters('parentBusinessTag')]"
+                    },
+                    "portfolioTag": {
+                        "value": "[parameters('portfolioTag')]"
+                    },
+                    "productTag": {
+                        "value": "[parameters('productTag')]"
+                    },
+                    "serviceTag": {
+                        "value": "[parameters('serviceTag')]"
+                    },
+                    "serviceLineTag": {
+                        "value": "[parameters('serviceLineTag')]"
+                    },
+                    "serviceOfferingTag": {
+                        "value": "[parameters('serviceOfferingTag')]"
+                    },
+                    "storageAccountName": {
+                        "value": "[parameters('sharedStorageName')]"
+                    },
+                    "storageKind": {
+                        "value": "StorageV2"
+                    },
+                    "enableCors": {
+                        "value": "True"
+                    },
+                    "allowedMethods": {
+                        "value": [ "GET", "POST", "PUT" ]
+                    },
+                    "minimumTlsVersion": {
+                        "value": "TLS1_2"
+                    },
+                    "allowBlobPublicAccess": {
+                        "value": false
+                    },
+                    "subnetResourceIdList": {
+                        "value": [
+                            "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('sharedVirtualNetworkName'), parameters('sharedSubnetName'))]"
+                        ]
+                    }
+                }
+            }
+        },
+        {
+            "apiVersion": "2019-05-01",
+            "name": "sharedStorageAccountConnectionStringShared",
+            "type": "Microsoft.Resources/deployments",
+            "dependsOn": [
+                "sharedKeyVault",
+                "sharedStorageAccount"
+            ],
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "[concat(variables('fundingBuildingBlocksUrl'),'keyvault-secret.json')]",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parameters": {
+                    "keyVaultName": {
+                        "value": "[parameters('sharedKeyVaultName')]"
+                    },
+                    "secretName": {
+                        "value": "AzureStorageConnectionString"
+                    },
+                    "secretValue": {
+                        "value": "[reference('sharedStorageAccount').outputs.storageConnectionString.value]"
+                    }
+                }
+            }
+        },
+        {
+            "apiVersion": "2019-05-01",
+            "name": "docCaptureUploadContainer",
+            "type": "Microsoft.Resources/deployments",
+            "dependsOn": [
+                "sharedStorageAccount"
+            ],
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "[concat(variables('fundingBuildingBlocksUrl'),'storage-container.json')]",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parameters": {
+                    "storageAccountName": {
+                        "value": "[parameters('sharedStorageName')]"
+                    },
+                    "containerName": {
+                        "value": "digital-forms-upload"
+                    }
+                }
+            }
+        },
+        {
+            "apiVersion": "2019-05-01",
+            "name": "sharedKeyVault",
+            "type": "Microsoft.Resources/deployments",
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "[concat(variables('fundingBuildingBlocksUrl'),'keyvault.json')]",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parameters": {
+                    "environmentTag": {
+                        "value": "[parameters('environmentTag')]"
+                    },
+                    "parentBusinessTag": {
+                        "value": "[parameters('parentBusinessTag')]"
+                    },
+                    "portfolioTag": {
+                        "value": "[parameters('portfolioTag')]"
+                    },
+                    "productTag": {
+                        "value": "[parameters('productTag')]"
+                    },
+                    "serviceTag": {
+                        "value": "[parameters('serviceTag')]"
+                    },
+                    "serviceLineTag": {
+                        "value": "[parameters('serviceLineTag')]"
+                    },
+                    "serviceOfferingTag": {
+                        "value": "[parameters('serviceOfferingTag')]"
+                    },
+                    "keyVaultName": {
+                        "value": "[parameters('sharedKeyVaultName')]"
+                    },
+                    "keyVaultAccessPolicies": {
+                        "value": "[parameters('accessPolicies').list]"
+                    },
+                    "enabledForTemplateDeployment": {
+                        "value": true
+                    },
+                    "enableSoftDelete": {
+                        "value": true
+                    },
+                    "enablePurgeProtection": {
+                        "value": true
+                    }
+                }
+            }
+        },
+        {
+            "apiVersion": "2019-05-01",
+            "name": "FundingDevopsAccessPolicySharedKeyVault",
+            "type": "Microsoft.Resources/deployments",
+            "dependsOn": [
+                "sharedKeyVault"
+            ],
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "[concat(variables('fundingBuildingBlocksUrl'),'keyvault-accesspolicies.json')]",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parameters": {
+                    "keyVaultName": {
+                        "value": "[parameters('sharedKeyVaultName')]"
+                    },
+                    "accessPolicies": {
+                        "value": [
+                            {
+                                "tenantId": "fad277c9-c60a-4da1-b5f3-b3b8b34a82f9",
+                                "objectId": "[parameters('deploymentServicePrincipalId')]",
+                                "permissions": {
+                                    "keys": [
+                                        "Get",
+                                        "List"
+                                    ],
+                                    "secrets": [
+                                        "Get",
+                                        "List"
+                                    ],
+                                    "certificates": [
+                                        "Get",
+                                        "List"
+                                    ]
+                                }
+                            }
+                        ]
+                    }
+                }
+            }
+        },
+        {
+            "apiVersion": "2019-07-01",
+            "name": "linuxFileDetailsFunctionAppPolicy",
+            "type": "Microsoft.Resources/deployments",
+            "dependsOn": [
+                "sharedKeyVault",
+                "linuxFileDetailsFunctionApp"
+            ],
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                "uri": "[concat(variables('fundingBuildingBlocksUrl'),'keyvault-accesspolicies.json')]",
+                "contentVersion": "1.0.0.0"
+                },
+                "parameters": {
+                "keyVaultName": {
+                    "value": "[parameters('sharedKeyVaultName')]"
+                },
+                "accessPolicies": {
+                    "value": [
+                        {
+                            "tenantId": "[subscription().tenantId]",
+                            "objectId": "[reference('linuxFileDetailsFunctionApp', '2019-07-01').outputs.managedServiceIdentityId.value]",
+                            "permissions": {
+                            "secrets": ["list", "get"]
+                            }
+                        }
+                    ]
+                }
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Resources/deployments",
+            "apiVersion": "2019-10-01",
+            "name": "sharedApplicationInsights",
+            "dependsOn": [
+                "sharedLogAnalytics"
+            ],
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "[concat(variables('fundingBuildingBlocksUrl'),'application-insights-workspace-based.json')]",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parameters": {
+                    "environmentTag": {
+                        "value": "[parameters('environmentTag')]"
+                    },
+                    "parentBusinessTag": {
+                        "value": "[parameters('parentBusinessTag')]"
+                    },
+                    "portfolioTag": {
+                        "value": "[parameters('portfolioTag')]"
+                    },
+                    "productTag": {
+                        "value": "[parameters('productTag')]"
+                    },
+                    "serviceTag": {
+                        "value": "[parameters('serviceTag')]"
+                    },
+                    "serviceLineTag": {
+                        "value": "[parameters('serviceLineTag')]"
+                    },
+                    "serviceOfferingTag": {
+                        "value": "[parameters('serviceOfferingTag')]"
+                    },
+                    "appInsightsName": {
+                        "value": "[parameters('sharedAppInsightsName')]"
+                    },
+                    "workspaceId": {
+                        "value": "[resourceId('microsoft.operationalinsights/workspaces', parameters('sharedLogAnalyticsName'))]"
+                    }
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Resources/deployments",
+            "apiVersion": "2019-10-01",
+            "name": "sharedCosmosAccount",
+            "dependsOn": [
+                "sharedVirtualNetwork"
+            ],
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "[concat(variables('fundingBuildingBlocksUrl'),'cosmos-db.json')]",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parameters": {
+                    "environmentTag": {
+                        "value": "[parameters('environmentTag')]"
+                    },
+                    "parentBusinessTag": {
+                        "value": "[parameters('parentBusinessTag')]"
+                    },
+                    "portfolioTag": {
+                        "value": "[parameters('portfolioTag')]"
+                    },
+                    "productTag": {
+                        "value": "[parameters('productTag')]"
+                    },
+                    "serviceTag": {
+                        "value": "[parameters('serviceTag')]"
+                    },
+                    "serviceLineTag": {
+                        "value": "[parameters('serviceLineTag')]"
+                    },
+                    "serviceOfferingTag": {
+                        "value": "[parameters('serviceOfferingTag')]"
+                    },
+                    "cosmosDbName": {
+                        "value": "[parameters('sharedCosmosAccount')]"
+                    },
+                    "cosmosDbType": {
+                        "value": "GlobalDocumentDB"
+                    },
+                    "defaultConsistencyLevel": {
+                        "value": "Strong"
+                    },
+                    "enableVirtualNetworkFilter": {
+                        "value": true
+                    },
+                    "subnetResourceIdList": {
+                        "value": [
+                            "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('sharedVirtualNetworkName'), parameters('sharedSubnetName'))]"
+                        ]
+                    },
+                    "ipRangeFilter": {
+                        "value": "217.38.175.0/24,217.38.165.0/24,213.123.63.150/32,86.188.174.157/32,194.72.231.129/29,81.134.140.20/28,81.128.242.152/29,81.128.242.123/32,31.121.65.90/32,109.159.240.25/32,208.127.46.232/29,208.127.46.240/28,208.127.45.99/32,208.127.45.248/32,208.127.46.14/32,208.127.46.110/32,208.127.50.230/32,208.127.52.236/32,208.127.52.237/32,208.127.53.148/32"
+                    }
+                }
+            }
+        },
+
+        {
+            "type": "Microsoft.Resources/deployments",
+            "apiVersion": "2019-10-01",
+            "name": "docCaptureDatabase",
+            "dependsOn": [
+                "sharedCosmosAccount"
+            ],
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "[concat(variables('fundingBuildingBlocksUrl'),'cosmos-db-database.json')]",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parameters": {
+                    "cosmosDbAccountName": {
+                        "value": "[parameters('sharedCosmosAccount')]"
+                    },
+                    "cosmosDbType": {
+                        "value": "GlobalDocumentDB"
+                    },
+                    "cosmosDatabase": {
+                        "value": "document-capture-db"
+                    }
+                }
+            }
+        },
+        {
+            "type": "Microsoft.DocumentDb/databaseAccounts/apis/databases/containers",
+            "name": "[concat(parameters('sharedCosmosAccount'), '/sql/document-capture-db/dc-data')]",
+            "dependsOn": [
+                "docCaptureDatabase"
+            ],
+            "apiVersion": "2016-03-31",
+            "properties": {
+                "options": {},
+                "resource": {
+                    "id": "dc-data",
+                    "partitionKey": {
+                      "paths": [
+                            "/id"
+                        ],
+                        "kind": "Hash"
+                    },
+                    "indexingPolicy": {
+                        "indexingMode": "consistent",
+                        "includedPaths": [
+                            {
+                                "path": "/*"
+                            }
+                        ],
+                        "excludedPaths": [
+                            {
+                                "path": "/\"etag\"/?"
+                            }
+                        ]
+                    }
+                }
+            }
+        },
+        {
+            "type": "Microsoft.DocumentDb/databaseAccounts/apis/databases/containers/settings",
+            "name": "[concat(parameters('sharedCosmosAccount'), '/sql/document-capture-db/dc-data/throughput')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.DocumentDb/databaseAccounts/apis/databases/containers', parameters('sharedCosmosAccount'), 'sql', 'document-capture-db', 'dc-data')]"
+            ],
+            "apiVersion": "2016-03-31",
+            "properties": {
+                "resource": {
+                    "throughput": "[parameters('dcDataCollectionThroughput')]"
+                }
+            }
+        },
+        {
+            "apiVersion": "2019-05-01",
+            "name": "sharedCosmosConnectionString",
+            "type": "Microsoft.Resources/deployments",
+            "dependsOn": [
+                "sharedKeyVault",
+                "sharedCosmosAccount"
+            ],
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "[concat(variables('fundingBuildingBlocksUrl'),'keyvault-secret.json')]",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parameters": {
+                    "keyVaultName": {
+                        "value": "[parameters('sharedKeyVaultName')]"
+                    },
+                    "secretName": {
+                        "value": "CosmosDbConnectionString"
+                    },
+                    "secretValue": {
+                        "value": "[concat('AccountEndpoint=https://', parameters('sharedCosmosAccount'), '.documents.azure.com:443/;AccountKey=', reference('sharedCosmosAccount').outputs.PrimaryMasterKey.value)]"
+                    }
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Resources/deployments",
+            "apiVersion": "2018-05-01",
+            "name": "linuxAppServicePlan",
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "[concat(variables('fundingBuildingBlocksUrl'),'app-service-plan.json')]",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parameters": {
+                    "environmentTag": {
+                        "value": "[parameters('environmentTag')]"
+                    },
+                    "parentBusinessTag": {
+                        "value": "[parameters('parentBusinessTag')]"
+                    },
+                    "portfolioTag": {
+                        "value": "[parameters('portfolioTag')]"
+                    },
+                    "productTag": {
+                        "value": "[parameters('productTag')]"
+                    },
+                    "serviceTag": {
+                        "value": "[parameters('serviceTag')]"
+                    },
+                    "serviceLineTag": {
+                        "value": "[parameters('serviceLineTag')]"
+                    },
+                    "serviceOfferingTag": {
+                        "value": "[parameters('serviceOfferingTag')]"
+                    },
+                    "appServicePlanName": {
+                        "value": "[parameters('linuxAppServicePlanName')]"
+                    },
+                    "aspSize": {
+                        "value": "[parameters('apiAppServicePlanSize')]"
+                    },
+                    "aspLocation": {
+                        "value": "UK South"
+                    },
+                    "aspInstances": {
+                        "value": "[parameters('apiAppServicePlanInstances')]"
+                    },
+                    "appServicePlanKind": {
+                        "value": "linux"
+                    },
+                    "nonASETier": {
+                        "value": "[parameters('apiAppServicePlanTier')]"
+                    }
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Resources/deployments",
+            "apiVersion": "2018-05-01",
+            "name": "linuxFileDetailsFunctionApp",
+            "dependsOn": [
+                "linuxAppServicePlan",
+                "sharedApplicationInsights",
+                "fileDetailsServiceBusConnectionString"
+            ],
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "[concat(variables('fundingBuildingBlocksUrl'),'function-app.json')]",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parameters": {
+                    "environmentTag": {
+                        "value": "[parameters('environmentTag')]"
+                    },
+                    "parentBusinessTag": {
+                        "value": "[parameters('parentBusinessTag')]"
+                    },
+                    "portfolioTag": {
+                        "value": "[parameters('portfolioTag')]"
+                    },
+                    "productTag": {
+                        "value": "[parameters('productTag')]"
+                    },
+                    "serviceTag": {
+                        "value": "[parameters('serviceTag')]"
+                    },
+                    "serviceLineTag": {
+                        "value": "[parameters('serviceLineTag')]"
+                    },
+                    "serviceOfferingTag": {
+                        "value": "[parameters('serviceOfferingTag')]"
+                    },
+                    "functionAppName": {
+                        "value": "[parameters('linuxFileDetailsFunctionAppName')]"
+                    },
+                    "appServicePlanName": {
+                        "value": "[parameters('linuxAppServicePlanName')]"
+                    },
+                    "appServicePlanResourceGroup": {
+                        "value": "[resourceGroup().name]"
+                    },
+                    "functionAppAppSettings": {
+                        "value": [
+                            {
+                                "name": "AzureWebJobsStorage",
+                                "value": "[concat('@Microsoft.KeyVault(VaultName=', parameters('sharedKeyVaultName'),';SecretName=AzureStorageConnectionString)')]"
+                            },
+                            {
+                                "name": "WEBSITE_TIME_ZONE",
+                                "value": "GMT Standard Time"
+                            },
+                            {
+                                "name": "APPINSIGHTS_INSTRUMENTATIONKEY",
+                                "value": "[reference('sharedApplicationInsights').outputs.InstrumentationKey.value]"
+                            },
+                            {
+                                "name": "FUNCTIONS_EXTENSION_VERSION",
+                                "value": "~4"
+                            },
+                            {
+                                "name": "FUNCTIONS_WORKER_RUNTIME",
+                                "value": "dotnet"
+                            },
+                            {
+                                "name": "filesDetailsServiceBus",
+                                "value": "[concat('@Microsoft.KeyVault(VaultName=', parameters('sharedKeyVaultName'), ';SecretName=filesDetailsServiceBus)')]"
+                            }
+                        ]
+                    },
+                    "http20Enabled": {
+                        "value": true
+                    },
+                    "subnetResourceId": {
+                        "value": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('sharedVirtualNetworkName'), parameters('sharedSubnetName'))]"
+                    },
+                    "workspaceId": {
+                        "value": "[resourceId('microsoft.operationalinsights/workspaces', parameters('sharedLogAnalyticsName'))]"
+                    },
+                    "functionAppLogsSetting": {
+                        "value": true
+                    },
+                    "retentionPolicyEnabled": {
+                        "value": false
+                    }
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Resources/deployments",
+            "apiVersion": "2019-10-01",
+            "name": "sharedLogAnalytics",
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "[concat(variables('fundingBuildingBlocksUrl'),'log-analytics.json')]",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parameters": {
+                    "environmentTag": {
+                        "value": "[parameters('environmentTag')]"
+                    },
+                    "parentBusinessTag": {
+                        "value": "[parameters('parentBusinessTag')]"
+                    },
+                    "portfolioTag": {
+                        "value": "[parameters('portfolioTag')]"
+                    },
+                    "productTag": {
+                        "value": "[parameters('productTag')]"
+                    },
+                    "serviceTag": {
+                        "value": "[parameters('serviceTag')]"
+                    },
+                    "serviceLineTag": {
+                        "value": "[parameters('serviceLineTag')]"
+                    },
+                    "serviceOfferingTag": {
+                        "value": "[parameters('serviceOfferingTag')]"
+                    },
+                    "logAnalyticsName": {
+                        "value": "[parameters('sharedLogAnalyticsName')]"
+                    },
+                    "logAnalyticsLocation": {
+                        "value": "UK South"
+                    }
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Resources/deployments",
+            "apiVersion": "2019-10-01",
+            "name": "sharedServiceBus",
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "[concat(variables('fundingBuildingBlocksUrl'),'service-bus.json')]",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parameters": {
+                    "environmentTag": {
+                        "value": "[parameters('environmentTag')]"
+                    },
+                    "parentBusinessTag": {
+                        "value": "[parameters('parentBusinessTag')]"
+                    },
+                    "portfolioTag": {
+                        "value": "[parameters('portfolioTag')]"
+                    },
+                    "productTag": {
+                        "value": "[parameters('productTag')]"
+                    },
+                    "serviceTag": {
+                        "value": "[parameters('serviceTag')]"
+                    },
+                    "serviceLineTag": {
+                        "value": "[parameters('serviceLineTag')]"
+                    },
+                    "serviceOfferingTag": {
+                        "value": "[parameters('serviceOfferingTag')]"
+                    },
+                    "serviceBusNamespaceName": {
+                        "value": "[parameters('sharedServiceBusName')]"
+                    }
+                }
+            }
+        },
+        {
+            "apiVersion": "2019-05-01",
+            "name": "fileDetailsServiceBusConnectionString",
+            "type": "Microsoft.Resources/deployments",
+            "dependsOn": [
+                "sharedKeyVault",
+                "sharedServiceBus"
+            ],
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "[concat(variables('fundingBuildingBlocksUrl'),'keyvault-secret.json')]",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parameters": {
+                    "keyVaultName": {
+                        "value": "[parameters('sharedKeyVaultName')]"
+                    },
+                    "secretName": {
+                        "value": "filesDetailsServiceBus"
+                    },
+                    "secretValue": {
+                        "value": "[reference('sharedServiceBus').outputs.ServiceBusEndpoint.value]"
+                    }
+                }
+            }
+        },
+        {
+            "apiVersion": "2019-05-01",
+            "name": "digitalFormsSharepointClientId",
+            "type": "Microsoft.Resources/deployments",
+            "dependsOn": [
+                "sharedKeyVault"
+            ],
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "[concat(variables('fundingBuildingBlocksUrl'),'keyvault-secret.json')]",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parameters": {
+                    "keyVaultName": {
+                        "value": "[parameters('sharedKeyVaultName')]"
+                    },
+                    "secretName": {
+                        "value": "DigitalFormsSharepointClientId"
+                    },
+                    "secretValue": {
+                        "value": "[parameters('digitalFormsSharepointClientId')]"
+                    }
+                }
+            }
+        },
+        {
+            "apiVersion": "2019-05-01",
+            "name": "digitalFormsSharepointTenantId",
+            "type": "Microsoft.Resources/deployments",
+            "dependsOn": [
+                "sharedKeyVault"
+            ],
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "[concat(variables('fundingBuildingBlocksUrl'),'keyvault-secret.json')]",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parameters": {
+                    "keyVaultName": {
+                        "value": "[parameters('sharedKeyVaultName')]"
+                    },
+                    "secretName": {
+                        "value": "DigitalFormsSharepointTenantId"
+                    },
+                    "secretValue": {
+                        "value": "[parameters('digitalFormsSharepointTenantId')]"
+                    }
+                }
+            }
+        },
+        {
+            "apiVersion": "2019-05-01",
+            "name": "digitalFormsSharepointClientSecret",
+            "type": "Microsoft.Resources/deployments",
+            "dependsOn": [
+                "sharedKeyVault"
+            ],
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "[concat(variables('fundingBuildingBlocksUrl'),'keyvault-secret.json')]",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parameters": {
+                    "keyVaultName": {
+                        "value": "[parameters('sharedKeyVaultName')]"
+                    },
+                    "secretName": {
+                        "value": "DigitalFormsSharepointClientSecret"
+                    },
+                    "secretValue": {
+                        "value": "[parameters('digitalFormsSharepointClientSecret')]"
+                    }
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Resources/deployments",
+            "apiVersion": "2019-10-01",
+            "name": "docCaptureUploadQueue",
+            "dependsOn": [
+              "sharedServiceBus"
+            ],
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "[concat(variables('fundingBuildingBlocksUrl'),'service-bus-queue.json')]",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parameters": {
+                    "serviceBusNamespaceName": {
+                        "value": "[parameters('sharedServiceBusName')]"
+                    },
+                    "queueName": {
+                        "value": "doccapture-upload"
+                    },
+                    "MessageLockDuration": {
+                        "value": "PT30S"
+                    }
+                }
+            }
+        }
+    ]
+}

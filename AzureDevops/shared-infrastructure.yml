@@ -1,0 +1,116 @@
+﻿pool:
+  vmImage: windows-2022
+
+trigger:
+  branches:
+    include:
+    - main
+
+stages:
+- stage: TestTemplates
+  jobs:
+    - job: BuildTestAndPublish
+      displayName: Test and publish ARM templates
+      steps:
+      - task: AzurePowerShell@4
+        displayName: 'Test ARM templates'
+        inputs:
+          azureSubscription: 's255d.azdo.deployment'
+          scriptType: filePath
+          scriptPath: '$(System.DefaultWorkingDirectory)\Scripts\Test-ArmTemplate.ps1'
+          scriptArguments: -ResourceGroup 's255d01rg-uks-tpltest01' -BaseDirectory '$(System.DefaultWorkingDirectory)\ARMTemplates' -Verbose
+          azurePowerShellVersion: LatestVersion
+
+      - task: PublishPipelineArtifact@1
+        displayName: Publish Scripts Artifact
+        inputs:
+          artifact:  'DocCapture.Scripts'
+          targetPath: '$(System.DefaultWorkingDirectory)\scripts'
+
+      - task: PublishPipelineArtifact@1
+        displayName: Publish Pipeline Artifact
+        inputs:
+          artifactName: 'DocCapture.ArmTemplates.Shared'
+          targetPath: '$(System.DefaultWorkingDirectory)\ARMTemplates'
+
+      - task:  Powershell@2
+        displayName: Generate Api Schemas
+        inputs:
+          targetType: inline
+          script: |
+            # Generate API definitions for the dc-fileshifter-function app
+            $source = Get-Content -Path EAPIM\definitions\dc-fileshifter-function.json
+
+            $content = $source -replace "<<APPSERVICE>>", "s255d01fa-df-dc-fileshifter.azurewebsites.net"
+            $content | Set-Content -Path EAPIM\definitions\dc-fileshifter-function-dev.json
+
+            $content = $source -replace "<<APPSERVICE>>", "s255t01fa-df-dc-fileshifter.azurewebsites.net"
+            $content | Set-Content -Path EAPIM\definitions\dc-fileshifter-function-test.json
+
+            $content = $source -replace "<<APPSERVICE>>", "s255p01fa-df-dc-fileshifter.azurewebsites.net"
+            $content | Set-Content -Path EAPIM\definitions\dc-fileshifter-function-production.json
+
+            # Generate API definitions for the doc-capture-api
+            $source = Get-Content -Path EAPIM\definitions\doc-capture-api.json
+
+            $content = $source -replace "<<APPSERVICE>>", "s255d01as-df-dc-api.azurewebsites.net"
+            $content | Set-Content -Path EAPIM\definitions\doc-capture-api-dev.json
+
+            $content = $source -replace "<<APPSERVICE>>", "s255t01as-df-dc-api.azurewebsites.net"
+            $content | Set-Content -Path EAPIM\definitions\doc-capture-api-test.json
+
+            $content = $source -replace "<<APPSERVICE>>", "s255p01as-df-dc-api.azurewebsites.net"
+            $content | Set-Content -Path EAPIM\definitions\doc-capture-api-production.json
+
+      - task: PublishPipelineArtifact@1
+        displayName: Publish Pipeline Artifact
+        inputs:
+          artifactName: 'DocCapture.Eapim'
+          targetPath: '$(System.DefaultWorkingDirectory)\EAPIM'
+
+- stage: DeployToDev
+  variables:
+  - template: VariableTemplates\dev.yml
+  - template: VariableTemplates\shared.yml
+  - group: "Document Capture - Sharepoint - Dev"
+  jobs:
+  - template: JobTemplates\deploy.yml
+    parameters:
+      AzureServiceConnection: 's255d.azdo.deployment'
+      Environment: Dev
+
+- stage: DeployToTest
+  condition: and(succeeded(), or(eq(variables['Build.SourceBranch'], 'refs/heads/main'), startsWith(variables['Build.SourceBranch'], 'refs/heads/release/')))
+  variables:
+  - template: VariableTemplates\test.yml
+  - template: VariableTemplates\shared.yml
+  - group: "Document Capture - Sharepoint - Test"
+  jobs:
+  - template: JobTemplates\deploy.yml
+    parameters:
+      AzureServiceConnection: 's255t.azdo.deployment'
+      Environment: Test
+
+- stage: DeployToPreProd
+  condition: and(succeeded(), or(eq(variables['Build.SourceBranch'], 'refs/heads/main'), startsWith(variables['Build.SourceBranch'], 'refs/heads/release/')))
+  variables:
+  - template: VariableTemplates\preprod.yml
+  - template: VariableTemplates\shared.yml
+  - group: "Document Capture - Sharepoint - PreProduction"
+  jobs:
+  - template: JobTemplates\deploy.yml
+    parameters:
+      AzureServiceConnection: 's255t.azdo.deployment'
+      Environment: PreProduction
+
+- stage: DeployToProduction
+  condition: and(succeeded(), or(eq(variables['Build.SourceBranch'], 'refs/heads/main'), startsWith(variables['Build.SourceBranch'], 'refs/heads/release/')))
+  variables:
+  - template: VariableTemplates\prod.yml
+  - template: VariableTemplates\shared.yml
+  - group: "Document Capture - Sharepoint - Production"
+  jobs:
+  - template: JobTemplates\deploy.yml
+    parameters:
+      AzureServiceConnection: 's255p.azdo.deployment'
+      Environment: Production

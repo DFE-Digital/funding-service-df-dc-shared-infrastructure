@@ -1,0 +1,17 @@
+# Visual Studio
+.vs/
+*.user
+*.suo
+
+# .NET build output
+bin/
+obj/
+
+# Test results
+TestResults/
+
+# Visual Studio Code
+.vscode/
+
+# Rider
+.idea/

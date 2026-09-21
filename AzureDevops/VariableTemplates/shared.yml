@@ -1,0 +1,23 @@
+﻿variables:
+  SharedResourceGroupName: $(ResourcePrefix)rg-uks-df-dc-shared
+  SharedStorageName: $(ResourcePrefix)strdfdcshared
+  SharedServiceBusName: $(ResourcePrefix)sbns-df-dc-shared
+  LinuxAppServicePlanName: $(ResourcePrefix)asp-df-dc-linux
+  SharedCosmosAccount: $(ResourcePrefix)cdb-df-dc-shared
+  SharedKeyVaultName: $(ResourcePrefix)kv-df-dc-shared
+  SharedVirtualNetworkName: $(ResourcePrefix)vnet-df-dc-shared
+  SharedSubnetName: $(ResourcePrefix)subnet-df-dc-shared
+  SharedRouteTableName: $(ResourcePrefix)rt-df-dc-shared
+  SharedNetworkSecurityGroupName: $(ResourcePrefix)nsg-df-dc-shared
+  SharedAppInsightsName: $(ResourcePrefix)ai-df-dc-shared
+  SharedLogAnalyticsName: $(ResourcePrefix)la-df-dc-shared
+
+  LinuxFileDetailsFunctionAppName: $(ResourcePrefix)fa-df-dc-filedetails-linux
+
+  # Tags
+  ServiceTag: 'Funding and Allocations'
+  ServiceLineTag: 'Funding'
+  ParentBusinessTag: 'Funding and Allocations'
+  PortfolioTag: 'Education And Skills Funding Agency'
+  ProductTag: 'Funding Service Digital Forms'
+  ServiceOfferingTag: 'Digital Forms'

@@ -1,0 +1,54 @@
+﻿parameters:
+- name: AzureServiceConnection
+  type: string
+- name: Environment
+  type: string
+
+jobs:
+- deployment: DeployTo${{ parameters.Environment }}
+  displayName: "Deploy To ${{ parameters.Environment }}"
+  environment: Doc Capture - ${{ parameters.Environment }}
+  strategy:
+    runOnce:
+      deploy:
+        steps:
+        - task: AzurePowerShell@5
+          displayName: 'Register resource provider'
+          inputs:
+            azureSubscription: '${{ parameters.AzureServiceConnection }}'
+            ScriptType: InlineScript
+            Inline: |
+              Register-AzResourceProvider -ProviderNamespace Microsoft.AlertsManagement
+            azurePowerShellVersion: LatestVersion
+            pwsh: true
+
+        - task: AzureResourceManagerTemplateDeployment@3
+          displayName: 'Create resource groups'
+          inputs:
+            deploymentScope: Subscription
+            azureResourceManagerConnection: '${{ parameters.AzureServiceConnection }}'
+            subscriptionId: '$(AzureSubscription)'
+            location: 'UK South'
+            csmFile: '$(Pipeline.Workspace)/DocCapture.ArmTemplates.Shared/resource-groups/template.json'
+            overrideParameters: '-environmentTag "$(variables.EnvironmentTag)" -parentBusinessTag "$(ParentBusinessTag)" -portfolioTag "$(PortfolioTag)" -productTag "$(ProductTag)" -serviceLineTag "$(ServiceLineTag)"  -serviceTag "$(ServiceTag)" -serviceOfferingTag "$(ServiceOfferingTag)" -sharedResourceGroupName "$(SharedResourceGroupName)" '
+            deploymentName: 'dc-resource-groups'
+
+        - task: AzurePowerShell@5
+          displayName: 'Get existing access policies from shared KeyVault'
+          inputs:
+            azureSubscription: '${{ parameters.AzureServiceConnection }}'
+            ScriptPath: '$(Pipeline.Workspace)/DocCapture.Scripts/GetKeyVaultAccessPolicies.ps1'
+            ScriptArguments: '-keyVaultName "$(SharedKeyVaultName)"'
+            azurePowerShellVersion: LatestVersion
+            pwsh: true
+
+        - task: AzureResourceManagerTemplateDeployment@3
+          displayName: 'Deploy shared resources'
+          inputs:
+            azureResourceManagerConnection: '${{ parameters.AzureServiceConnection }}'
+            subscriptionId: '$(AzureSubscription)'
+            resourceGroupName: '$(SharedResourceGroupName)'
+            location: 'UK South'
+            csmFile: '$(Pipeline.Workspace)/DocCapture.ArmTemplates.Shared/shared/template.json'
+            deploymentName: 'dc-shared-infrastructure'
+            overrideParameters: '-environmentTag "$(EnvironmentTag)" -parentBusinessTag "$(ParentBusinessTag)" -portfolioTag "$(PortfolioTag)" -productTag "$(ProductTag)" -serviceLineTag "$(ServiceLineTag)" -serviceTag "$(ServiceTag)" -serviceOfferingTag "$(ServiceOfferingTag)" -sharedStorageName "$(SharedStorageName)" -sharedServiceBusName "$(SharedServiceBusName)" -linuxAppServicePlanName "$(LinuxAppServicePlanName)" -apiAppServicePlanSize "$(ApiAppServicePlanSize)" -apiAppServicePlanInstances "$(ApiAppServicePlanInstances)" -apiAppServicePlanTier "$(ApiAppServicePlanTier)" -sharedCosmosAccount "$(SharedCosmosAccount)" -sharedKeyVaultName "$(SharedKeyVaultName)" -accessPolicies $(Infra.KeyVault.AccessPolicies) -deploymentServicePrincipalId "$(DeploymentServicePrincipal)" -sharedVirtualNetworkName "$(SharedVirtualNetworkName)" -sharedSubnetName "$(SharedSubnetName)" -sharedRouteTableName "$(SharedRouteTableName)" -sharedNetworkSecurityGroupName "$(SharedNetworkSecurityGroupName)" -sharedAppInsightsName "$(SharedAppInsightsName)" -sharedLogAnalyticsName "$(SharedLogAnalyticsName)" -linuxFileDetailsFunctionAppName "$(linuxFileDetailsFunctionAppName)" -digitalFormsSharepointTenantId "$(DigitalFormsSharepointTenantId)" -digitalFormsSharepointClientId "$(DigitalFormsSharepointClientId)" -digitalFormsSharepointClientSecret "$(DigitalFormsSharepointClientSecret)"'
